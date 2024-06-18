@@ -47,27 +47,71 @@ class IntegerMatrix implements IteratorAggregate
     public function getIterator(): Traversable
     {
         for ($i = 0; $i < $this->height; $i++) {
-            yield implode(
-                "\040",
-                array_map(
-                    fn () => str_pad($this->generator->get(), 4, "\040"),
-                    array_fill(0, $this->length, null),
-                ),
+            yield array_map(
+                fn () => str_pad($this->generator->get(), 4, "\040"),
+                array_fill(0, $this->length, null),
             );
         }    
+    }
+}
+
+trait MatrixToArrayConverterTrait
+{
+    public function convert(IteratorAggregate $iterator): array
+    {
+        $stringArray = array();
+            $i = 0;
+            foreach ($iterator as $str) {
+                $stringArray[$i] = $str;
+                $i++;
+            }
+
+        return $stringArray;
+    }
+}
+
+trait ArrayColumnSumTrait
+{
+    public function sum(array $array)
+    {
+        $result = array();
+        for($i = 0; $i < count($array); $i++) {
+            foreach($array[$i] as $key => $num) {
+                if(isset($result[$key]))
+                    $result[$key] += $num;
+                else
+                    $result[$key] = $num;
+            }
+        }
+        return $result;
     }
 }
  
 class Printer
 {
+    use MatrixToArrayConverterTrait, ArrayColumnSumTrait;
+
     public function __construct(
         public readonly string $separator,
     ) {}
  
     public function print(IteratorAggregate $iterator): void
     {
-        foreach ($iterator as $str) {
-            echo $str . $this->separator;
+        $stringArray = $this->convert($iterator);
+        foreach ($stringArray as $str) {
+            echo implode("\040", $str) . $this->separator;            
+        }
+
+        echo $this->separator;
+
+        foreach ($stringArray as $key => $string) {
+            echo "Cумма строки №" . $key + 1 . " : " . array_sum($string) . $this->separator;  
+        }  
+
+        echo $this->separator;
+
+        foreach($this->sum($stringArray) as $key => $sum) {
+            echo "Сумма колонки №" . $key + 1 . " : ". $sum . $this->separator;
         }
     }
 }
